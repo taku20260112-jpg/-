@@ -1,0 +1,135 @@
+body{
+  margin:0;
+  font-family:system-ui,sans-serif;
+  background:#0b0f17;
+  color:#fff;
+}
+
+.app{
+  max-width:900px;
+  margin:20px auto;
+  padding:10px;
+}
+
+.header h1{
+  margin:0 0 6px;
+}
+
+.sub{
+  margin:0 0 14px;
+  opacity:.75;
+}
+
+.card{
+  background:#1a1f2e;
+  padding:15px;
+  border-radius:10px;
+  margin-bottom:15px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+}
+
+.field span{
+  display:block;
+  font-size:12px;
+  opacity:.8;
+  margin-bottom:6px;
+}
+
+.field input{
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #2a3247;
+  background:#0f1422;
+  color:#fff;
+  outline:none;
+}
+
+.actions{
+  margin-top:12px;
+  display:flex;
+  gap:10px;
+}
+
+.btn{
+  padding:10px 14px;
+  border-radius:8px;
+  border:none;
+  cursor:pointer;
+  background:#2a3247;
+  color:#fff;
+}
+
+.btn:hover{
+  filter:brightness(1.05);
+}
+
+.primary{
+  background:#6ea8ff;
+  color:#0b0f17;
+  font-weight:700;
+}
+
+.divider{
+  height:1px;
+  background:#2a3247;
+  margin:14px 0;
+}
+
+.stats{
+  margin-top:10px;
+  line-height:1.6;
+  white-space:pre-line;
+}
+
+/* charts */
+.charts{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:16px;
+}
+
+.chartBox h3{
+  margin:0 0 8px;
+  font-size:14px;
+  opacity:.9;
+}
+
+.canvasWrap{
+  height:320px;
+  border-radius:10px;
+  background:#0f1422;
+  border:1px solid #2a3247;
+  padding:10px;
+}
+
+/* table */
+.table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+.table th,.table td{
+  padding:8px;
+  border-bottom:1px solid #333;
+}
+
+.table th{
+  text-align:left;
+  opacity:.85;
+}
+
+/* mobile */
+@media (max-width: 720px){
+  .grid{
+    grid-template-columns:1fr;
+  }
+  .canvasWrap{
+    height:280px;
+  }
+}

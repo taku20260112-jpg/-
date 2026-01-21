@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>体重 & 摂取カロリー記録</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1>体重 & 摂取カロリー記録</h1>
+      <p class="sub">LocalStorage保存（同じ端末・同じブラウザで保持）</p>
+    </header>
+
+    <section class="card">
+      <h2>入力</h2>
+
+      <form id="entryForm" class="form" autocomplete="off">
+        <div class="grid">
+          <label class="field">
+            <span>日付</span>
+            <input id="date" type="date" required />
+          </label>
+
+          <label class="field">
+            <span>体重（kg）</span>
+            <input id="weight" type="number" step="0.1" required />
+          </label>
+
+          <label class="field">
+            <span>摂取カロリー（kcal）</span>
+            <input id="calories" type="number" step="1" required />
+          </label>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn primary">保存</button>
+          <button type="button" id="resetToday" class="btn">今日に戻す</button>
+        </div>
+      </form>
+
+      <div class="divider"></div>
+      <div class="stats" id="stats"></div>
+    </section>
+
+    <section class="card">
+      <h2>グラフ</h2>
+
+      <div class="charts">
+        <div class="chartBox">
+          <h3>体重推移（日次）</h3>
+          <div class="canvasWrap">
+            <canvas id="weightLineChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chartBox">
+          <h3>週平均体重（週ごと）</h3>
+          <div class="canvasWrap">
+            <canvas id="weeklyAvgChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>履歴</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>日付</th>
+            <th>体重</th>
+            <th>カロリー</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </section>
+  </div>
+
+  <!-- Chart.js（app.jsより先に読み込む） -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
