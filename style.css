@@ -16,9 +16,13 @@ body{
 }
 
 .sub{
-  margin:0 0 14px;
-  opacity:.75;
+  margin-top: 6px;
+  margin-bottom: 14px;
+  font-size: 0.95rem;
+  color: #b0b8c4;
+  letter-spacing: 0.02em;
 }
+
 
 .card{
   background:#1a1f2e;
@@ -87,7 +91,7 @@ body{
   white-space:pre-line;
 }
 
-/* charts */
+/* ✅ グラフ用 */
 .charts{
   display:grid;
   grid-template-columns:1fr;
@@ -108,7 +112,7 @@ body{
   padding:10px;
 }
 
-/* table */
+/* ✅ テーブル */
 .table{
   width:100%;
   border-collapse:collapse;
@@ -124,7 +128,29 @@ body{
   opacity:.85;
 }
 
-/* mobile */
+.opBtns{
+  display:flex;
+  gap:8px;
+  justify-content:flex-start;
+}
+
+.smallBtn{
+  padding:6px 10px;
+  border-radius:8px;
+  border:none;
+  cursor:pointer;
+  background:#2a3247;
+  color:#fff;
+  font-size:12px;
+}
+
+.smallBtn.danger{
+  background:#ff6e6e;
+  color:#0b0f17;
+  font-weight:700;
+}
+
+/* スマホ */
 @media (max-width: 720px){
   .grid{
     grid-template-columns:1fr;
