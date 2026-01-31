@@ -25,14 +25,21 @@
 
           <label class="field">
             <span>体重（kg）</span>
-            <input id="weight" type="number" step="0.1" required />
+            <!-- ✅ required を外す（体重だけの日でもOKにする） -->
+            <input id="weight" type="number" step="0.1" />
           </label>
 
           <label class="field">
             <span>摂取カロリー（kcal）</span>
-            <input id="calories" type="number" step="1" required />
+            <!-- ✅ required を外す（カロリーだけの日でもOKにする） -->
+            <input id="calories" type="number" step="1" />
           </label>
         </div>
+
+        <!-- ✅ 補足文（ユーザーが迷わない） -->
+        <p class="hint">
+          ※体重・カロリーはどちらか片方だけでも保存できます（同じ日付に後から追加入力すると自動で結合されます）
+        </p>
 
         <div class="actions">
           <button type="submit" class="btn primary">保存</button>
@@ -44,7 +51,6 @@
       <div class="stats" id="stats"></div>
     </section>
 
-    <!-- ✅ 追加：グラフ -->
     <section class="card">
       <h2>グラフ</h2>
 
@@ -81,7 +87,6 @@
     </section>
   </div>
 
-  <!-- ✅ 追加：Chart.js（app.jsより先に読み込む） -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="./app.js"></script>
 </body>
