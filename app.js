@@ -37,10 +37,17 @@ function avg(arr){
   return arr.reduce((s,x)=>s+x,0) / arr.length;
 }
 
+function addDays(isoDate, delta){
+  const d = new Date(isoDate);
+  d.setDate(d.getDate() + delta);
+  return d.toISOString().slice(0,10);
+}
+
 /**
- * メンテナンスカロリー推定（修正版）
- * - 14日平均摂取カロリー
- * - （直近7日平均体重 − その前7日平均体重）＝ 14日間の体重変化
+ * メンテナンスカロリー推定（欠損対応版）
+ * - 直近14日（カレンダー日付）を対象にする
+ * - カロリー：入力がある日のみ平均（最低7日分）
+ * - 体重：直近7日とその前7日でそれぞれ平均（各最低3回）
  * - 脂肪1kg = 7200kcal
  */
 function calcMaintenance(data){
@@ -50,24 +57,49 @@ function calcMaintenance(data){
       weight: Number(x.weight),
       calories: Number(x.calories),
     }))
-    .filter(x => x.date && Number.isFinite(x.weight) && Number.isFinite(x.calories));
+    .filter(x => x.date);
 
-  if (cleaned.length < 14) return null;
+  if (cleaned.length < 1) return null;
 
-  const latest14 = sortDesc(cleaned).slice(0, 14);
+  // date -> record (最新で上書きされる)
+  const byDate = new Map();
+  for (const r of cleaned) byDate.set(r.date, r);
 
-  const avgCal14 = avg(latest14.map(x => x.calories));
+  const dates = Array.from(byDate.keys()).sort((a,b)=> new Date(a) - new Date(b));
+  const latestDate = dates[dates.length - 1];
 
-  const last7 = latest14.slice(0, 7);
-  const prev7 = latest14.slice(7, 14);
+  // latestDate を含む直近14日（カレンダー日付）
+  const window14 = [];
+  for(let i=13; i>=0; i--){
+    window14.push(addDays(latestDate, -i));
+  }
 
-  const avgWLast7 = avg(last7.map(x => x.weight));
-  const avgWPrev7 = avg(prev7.map(x => x.weight));
-  const delta14daysKg = avgWLast7 - avgWPrev7; // 14日間の変化量
+  const prev7Dates = window14.slice(0,7);
+  const last7Dates = window14.slice(7);
 
-  // 日次収支（kcal/day）
+  const calVals = window14
+    .map(d => byDate.get(d)?.calories)
+    .filter(v => Number.isFinite(v));
+
+  const prev7W = prev7Dates
+    .map(d => byDate.get(d)?.weight)
+    .filter(v => Number.isFinite(v));
+
+  const last7W = last7Dates
+    .map(d => byDate.get(d)?.weight)
+    .filter(v => Number.isFinite(v));
+
+  // 条件（好みで調整OK）
+  if (calVals.length < 7) return null;
+  if (prev7W.length < 3) return null;
+  if (last7W.length < 3) return null;
+
+  const avgCal14 = avg(calVals);
+  const avgWPrev7 = avg(prev7W);
+  const avgWLast7 = avg(last7W);
+
+  const delta14daysKg = avgWLast7 - avgWPrev7;
   const estDailyBalance = (delta14daysKg * 7200) / 14;
-
   const maintenance = Math.round(avgCal14 - estDailyBalance);
 
   return {
@@ -77,6 +109,12 @@ function calcMaintenance(data){
     avgWPrev7: Math.round(avgWPrev7 * 10) / 10,
     delta14daysKg: Math.round(delta14daysKg * 100) / 100,
     estDailyBalance: Math.round(estDailyBalance),
+    counts: {
+      calDays: calVals.length,
+      last7WeightDays: last7W.length,
+      prev7WeightDays: prev7W.length,
+    },
+    window: { start: window14[0], end: window14[13] }
   };
 }
 
@@ -177,11 +215,17 @@ function render(){
 
   tbody.innerHTML = "";
   desc.forEach(r => {
+    const wNum = Number(r.weight);
+    const cNum = Number(r.calories);
+
+    const wText = Number.isFinite(wNum) ? wNum.toFixed(1) : "—";
+    const cText = Number.isFinite(cNum) ? String(Math.round(cNum)) : "—";
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${r.date}</td>
-      <td>${Number(r.weight).toFixed(1)}</td>
-      <td>${Math.round(r.calories)}</td>
+      <td>${wText}</td>
+      <td>${cText}</td>
       <td></td>
     `;
     tbody.appendChild(tr);
@@ -189,17 +233,22 @@ function render(){
 
   const m = calcMaintenance(data);
   if(!m){
-    stats.textContent = "14日分入力してください";
+    stats.textContent =
+`推定に必要な入力が不足しています。
+目安：直近14日で「カロリー7日以上」＋「体重（直近7日で3回以上 & 前7日で3回以上）」`;
   }else{
     const sign = m.delta14daysKg >= 0 ? "+" : "";
     stats.textContent =
 `推定メンテナンス: ${m.maintenance} kcal
 
+対象期間: ${m.window.start} 〜 ${m.window.end}
 14日平均摂取: ${m.avgCal14} kcal
 直近7日平均体重: ${m.avgWLast7} kg
 その前7日平均体重: ${m.avgWPrev7} kg
 14日間変化量: ${sign}${m.delta14daysKg} kg
-推定日次収支: ${m.estDailyBalance} kcal/day`;
+推定日次収支: ${m.estDailyBalance} kcal/day
+
+入力状況: カロリー${m.counts.calDays}日 / 体重(直近7日${m.counts.last7WeightDays}回, 前7日${m.counts.prev7WeightDays}回)`;
   }
 
   renderCharts(data);
@@ -209,14 +258,48 @@ form.addEventListener("submit", e => {
   e.preventDefault();
 
   const d = dateEl.value;
-  const w = Number(weightEl.value);
-  const c = Number(caloriesEl.value);
 
-  if(!d || !Number.isFinite(w) || !Number.isFinite(c)) return;
+  const wStr = String(weightEl.value ?? "").trim();
+  const cStr = String(caloriesEl.value ?? "").trim();
 
-  const data = load().filter(x => x.date !== d);
-  data.push({ date: d, weight: w, calories: c });
+  const w = wStr === "" ? null : Number(wStr);
+  const c = cStr === "" ? null : Number(cStr);
+
+  const hasW = Number.isFinite(w);
+  const hasC = Number.isFinite(c);
+
+  // 日付必須、どちらか一方が必須
+  if (!d || (!hasW && !hasC)) return;
+
+  const data = load();
+
+  // 同日があればマージ：入力された方のみ上書き、未入力側は保持
+  const idx = data.findIndex(x => x.date === d);
+  if (idx >= 0) {
+    const prev = data[idx] ?? { date: d };
+
+    const prevW = Number(prev.weight);
+    const prevC = Number(prev.calories);
+
+    data[idx] = {
+      date: d,
+      weight: hasW ? w : (Number.isFinite(prevW) ? prevW : null),
+      calories: hasC ? c : (Number.isFinite(prevC) ? prevC : null),
+    };
+  } else {
+    data.push({
+      date: d,
+      weight: hasW ? w : null,
+      calories: hasC ? c : null,
+    });
+  }
+
   save(data);
+
+  // ✅ UX改善：保存後に入力欄クリア（次の入力がラク）
+  weightEl.value = "";
+  caloriesEl.value = "";
+
   render();
 });
 
