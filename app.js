@@ -11,36 +11,50 @@ const resetTodayBtn = document.getElementById("resetToday");
 let weightLineChartInstance = null;
 let weeklyAvgChartInstance = null;
 
-function today(){
+function today() {
   const d = new Date();
-  return d.toISOString().slice(0,10);
+  return d.toISOString().slice(0, 10);
 }
 
-function load(){
+function load() {
   return JSON.parse(localStorage.getItem(KEY) || "[]");
 }
 
-function save(d){
+function save(d) {
   localStorage.setItem(KEY, JSON.stringify(d));
 }
 
-function sortAsc(data){
-  return [...data].sort((a,b) => new Date(a.date) - new Date(b.date));
+function sortAsc(data) {
+  return [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
 }
 
-function sortDesc(data){
-  return [...data].sort((a,b) => new Date(b.date) - new Date(a.date));
+function sortDesc(data) {
+  return [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
-function avg(arr){
-  if(!arr.length) return null;
-  return arr.reduce((s,x)=>s+x,0) / arr.length;
+function avg(arr) {
+  if (!arr.length) return null;
+  return arr.reduce((s, x) => s + x, 0) / arr.length;
 }
 
-function addDays(isoDate, delta){
+function addDays(isoDate, delta) {
   const d = new Date(isoDate);
   d.setDate(d.getDate() + delta);
-  return d.toISOString().slice(0,10);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * 未入力を 0 にしないための数値変換
+ * - null/undefined/"" は null
+ * - 数値にできるものは number
+ * - それ以外は null
+ */
+function toNumOrNull(v) {
+  if (v === null || v === undefined) return null;
+  const s = String(v).trim();
+  if (s === "") return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
 }
 
 /**
@@ -49,15 +63,19 @@ function addDays(isoDate, delta){
  * - カロリー：入力がある日のみ平均（最低7日分）
  * - 体重：直近7日とその前7日でそれぞれ平均（各最低3回）
  * - 脂肪1kg = 7200kcal
+ *
+ * 重要:
+ * - 未入力（null/undefined/""）を Number() で 0 にしない
+ * - 欠損値は計算に使わない
  */
-function calcMaintenance(data){
+function calcMaintenance(data) {
   const cleaned = data
-    .map(x => ({
+    .map((x) => ({
       date: String(x.date ?? ""),
-      weight: Number(x.weight),
-      calories: Number(x.calories),
+      weight: toNumOrNull(x.weight),
+      calories: toNumOrNull(x.calories),
     }))
-    .filter(x => x.date);
+    .filter((x) => x.date);
 
   if (cleaned.length < 1) return null;
 
@@ -65,29 +83,31 @@ function calcMaintenance(data){
   const byDate = new Map();
   for (const r of cleaned) byDate.set(r.date, r);
 
-  const dates = Array.from(byDate.keys()).sort((a,b)=> new Date(a) - new Date(b));
+  const dates = Array.from(byDate.keys()).sort(
+    (a, b) => new Date(a) - new Date(b)
+  );
   const latestDate = dates[dates.length - 1];
 
   // latestDate を含む直近14日（カレンダー日付）
   const window14 = [];
-  for(let i=13; i>=0; i--){
+  for (let i = 13; i >= 0; i--) {
     window14.push(addDays(latestDate, -i));
   }
 
-  const prev7Dates = window14.slice(0,7);
+  const prev7Dates = window14.slice(0, 7);
   const last7Dates = window14.slice(7);
 
   const calVals = window14
-    .map(d => byDate.get(d)?.calories)
-    .filter(v => Number.isFinite(v));
+    .map((d) => byDate.get(d)?.calories)
+    .filter((v) => Number.isFinite(v));
 
   const prev7W = prev7Dates
-    .map(d => byDate.get(d)?.weight)
-    .filter(v => Number.isFinite(v));
+    .map((d) => byDate.get(d)?.weight)
+    .filter((v) => Number.isFinite(v));
 
   const last7W = last7Dates
-    .map(d => byDate.get(d)?.weight)
-    .filter(v => Number.isFinite(v));
+    .map((d) => byDate.get(d)?.weight)
+    .filter((v) => Number.isFinite(v));
 
   // 条件（好みで調整OK）
   if (calVals.length < 7) return null;
@@ -114,32 +134,32 @@ function calcMaintenance(data){
       last7WeightDays: last7W.length,
       prev7WeightDays: prev7W.length,
     },
-    window: { start: window14[0], end: window14[13] }
+    window: { start: window14[0], end: window14[13] },
   };
 }
 
 /* ===== charts ===== */
 
-function getMonday(date){
+function getMonday(date) {
   const d = new Date(date);
   const day = d.getDay();
   const diff = (day === 0 ? -6 : 1) - day;
   d.setDate(d.getDate() + diff);
-  d.setHours(0,0,0,0);
+  d.setHours(0, 0, 0, 0);
   return d;
 }
 
-function toISODate(d){
+function toISODate(d) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
 
-function calcWeeklyAverages(rowsAsc){
+function calcWeeklyAverages(rowsAsc) {
   const map = new Map();
 
-  for (const r of rowsAsc){
+  for (const r of rowsAsc) {
     const weekStart = getMonday(r.date);
     const key = toISODate(weekStart);
 
@@ -150,73 +170,71 @@ function calcWeeklyAverages(rowsAsc){
   }
 
   return Array.from(map.entries())
-    .sort((a,b) => new Date(a[0]) - new Date(b[0]))
+    .sort((a, b) => new Date(a[0]) - new Date(b[0]))
     .map(([weekStartISO, v]) => ({
       label: `${weekStartISO}週`,
-      avgWeight: Math.round((v.sum / v.count) * 10) / 10
+      avgWeight: Math.round((v.sum / v.count) * 10) / 10,
     }));
 }
 
-function renderCharts(data){
+function renderCharts(data) {
   const rows = sortAsc(data)
-    .map(x => ({ date: x.date, weight: Number(x.weight) }))
-    .filter(x => x.date && Number.isFinite(x.weight));
+    .map((x) => ({ date: x.date, weight: toNumOrNull(x.weight) }))
+    .filter((x) => x.date && Number.isFinite(x.weight));
 
-  if(weightLineChartInstance) weightLineChartInstance.destroy();
-  if(weeklyAvgChartInstance) weeklyAvgChartInstance.destroy();
-  if(!rows.length) return;
+  if (weightLineChartInstance) weightLineChartInstance.destroy();
+  if (weeklyAvgChartInstance) weeklyAvgChartInstance.destroy();
+  if (!rows.length) return;
 
   const weightCanvas = document.getElementById("weightLineChart");
   const weeklyCanvas = document.getElementById("weeklyAvgChart");
-  if(!weightCanvas || !weeklyCanvas) return;
+  if (!weightCanvas || !weeklyCanvas) return;
 
-  weightLineChartInstance = new Chart(
-    weightCanvas,
-    {
-      type: "line",
-      data: {
-        labels: rows.map(x => x.date),
-        datasets: [{
+  weightLineChartInstance = new Chart(weightCanvas, {
+    type: "line",
+    data: {
+      labels: rows.map((x) => x.date),
+      datasets: [
+        {
           label: "体重 (kg)",
-          data: rows.map(x => x.weight),
+          data: rows.map((x) => x.weight),
           tension: 0.2,
-          pointRadius: 3
-        }]
-      },
-      options: { responsive: true, maintainAspectRatio: false }
-    }
-  );
+          pointRadius: 3,
+        },
+      ],
+    },
+    options: { responsive: true, maintainAspectRatio: false },
+  });
 
   const weekly = calcWeeklyAverages(rows);
 
-  weeklyAvgChartInstance = new Chart(
-    weeklyCanvas,
-    {
-      type: "line",
-      data: {
-        labels: weekly.map(x => x.label),
-        datasets: [{
+  weeklyAvgChartInstance = new Chart(weeklyCanvas, {
+    type: "line",
+    data: {
+      labels: weekly.map((x) => x.label),
+      datasets: [
+        {
           label: "週平均体重 (kg)",
-          data: weekly.map(x => x.avgWeight),
+          data: weekly.map((x) => x.avgWeight),
           tension: 0.2,
-          pointRadius: 3
-        }]
-      },
-      options: { responsive: true, maintainAspectRatio: false }
-    }
-  );
+          pointRadius: 3,
+        },
+      ],
+    },
+    options: { responsive: true, maintainAspectRatio: false },
+  });
 }
 
 /* ===== UI ===== */
 
-function render(){
+function render() {
   const data = load();
   const desc = sortDesc(data);
 
   tbody.innerHTML = "";
-  desc.forEach(r => {
-    const wNum = Number(r.weight);
-    const cNum = Number(r.calories);
+  desc.forEach((r) => {
+    const wNum = toNumOrNull(r.weight);
+    const cNum = toNumOrNull(r.calories);
 
     const wText = Number.isFinite(wNum) ? wNum.toFixed(1) : "—";
     const cText = Number.isFinite(cNum) ? String(Math.round(cNum)) : "—";
@@ -232,14 +250,12 @@ function render(){
   });
 
   const m = calcMaintenance(data);
-  if(!m){
-    stats.textContent =
-`推定に必要な入力が不足しています。
+  if (!m) {
+    stats.textContent = `推定に必要な入力が不足しています。
 目安：直近14日で「カロリー7日以上」＋「体重（直近7日で3回以上 & 前7日で3回以上）」`;
-  }else{
+  } else {
     const sign = m.delta14daysKg >= 0 ? "+" : "";
-    stats.textContent =
-`推定メンテナンス: ${m.maintenance} kcal
+    stats.textContent = `推定メンテナンス: ${m.maintenance} kcal
 
 対象期間: ${m.window.start} 〜 ${m.window.end}
 14日平均摂取: ${m.avgCal14} kcal
@@ -254,16 +270,13 @@ function render(){
   renderCharts(data);
 }
 
-form.addEventListener("submit", e => {
+form.addEventListener("submit", (e) => {
   e.preventDefault();
 
   const d = dateEl.value;
 
-  const wStr = String(weightEl.value ?? "").trim();
-  const cStr = String(caloriesEl.value ?? "").trim();
-
-  const w = wStr === "" ? null : Number(wStr);
-  const c = cStr === "" ? null : Number(cStr);
+  const w = toNumOrNull(weightEl.value);
+  const c = toNumOrNull(caloriesEl.value);
 
   const hasW = Number.isFinite(w);
   const hasC = Number.isFinite(c);
@@ -274,17 +287,16 @@ form.addEventListener("submit", e => {
   const data = load();
 
   // 同日があればマージ：入力された方のみ上書き、未入力側は保持
-  const idx = data.findIndex(x => x.date === d);
+  const idx = data.findIndex((x) => x.date === d);
   if (idx >= 0) {
     const prev = data[idx] ?? { date: d };
-
-    const prevW = Number(prev.weight);
-    const prevC = Number(prev.calories);
+    const prevW = toNumOrNull(prev.weight);
+    const prevC = toNumOrNull(prev.calories);
 
     data[idx] = {
       date: d,
-      weight: hasW ? w : (Number.isFinite(prevW) ? prevW : null),
-      calories: hasC ? c : (Number.isFinite(prevC) ? prevC : null),
+      weight: hasW ? w : prevW,
+      calories: hasC ? c : prevC,
     };
   } else {
     data.push({
@@ -296,7 +308,7 @@ form.addEventListener("submit", e => {
 
   save(data);
 
-  // ✅ UX改善：保存後に入力欄クリア（次の入力がラク）
+  // UX改善：保存後に入力欄クリア
   weightEl.value = "";
   caloriesEl.value = "";
 
