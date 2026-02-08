@@ -101,7 +101,60 @@ body{
 .stats{
   margin-top:10px;
   line-height:1.6;
+}
+
+/* ✅ 追加：statsテキスト表示をpreにしても馴染むように */
+.statsText{
+  margin:0;
   white-space:pre-line;
+  font-family:inherit;
+}
+
+/* ✅ 追加：増量/減量目安ブロック（targets） */
+.targets{
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #0f1422;
+  border: 1px solid #2a3247;
+}
+
+.targetRow{
+  display: grid;
+  grid-template-columns: 84px 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 0;
+}
+
+.targetRow + .targetRow{
+  border-top: 1px dashed rgba(255,255,255,0.08);
+  margin-top: 6px;
+  padding-top: 10px;
+}
+
+.targetRow .label{
+  font-size: 12px;
+  color: #b0b8c4;
+}
+
+.targetRow .value{
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.targetRow .delta{
+  font-size: 12px;
+  color: #b0b8c4;
+  opacity: 0.9;
+}
+
+.targets .note{
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #b0b8c4;
+  line-height: 1.5;
 }
 
 /* ✅ グラフ用 */
@@ -170,5 +223,10 @@ body{
   }
   .canvasWrap{
     height:280px;
+  }
+
+  /* スマホ時：ラベル列を少し詰める */
+  .targetRow{
+    grid-template-columns: 76px 1fr auto;
   }
 }
