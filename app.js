@@ -6,7 +6,11 @@ const weightEl = document.getElementById("weight");
 const caloriesEl = document.getElementById("calories");
 const tbody = document.getElementById("tbody");
 const stats = document.getElementById("stats");
+const statsText = document.getElementById("statsText"); // ✅ 追加
 const resetTodayBtn = document.getElementById("resetToday");
+
+// ✅ 追加：増量/減量の差分（今は固定で ±250）
+const TARGET_DELTA = 250;
 
 let weightLineChartInstance = null;
 let weeklyAvgChartInstance = null;
@@ -55,6 +59,31 @@ function toNumOrNull(v) {
   if (s === "") return null;
   const n = Number(s);
   return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * ✅ 追加：増量/減量目安の表示更新
+ */
+function updateTargetsUI(maintenanceKcal) {
+  const cutEl = document.getElementById("cutKcal");
+  const bulkEl = document.getElementById("bulkKcal");
+  const noteEl = document.getElementById("targetsNote");
+
+  if (!cutEl || !bulkEl) return;
+
+  if (!Number.isFinite(maintenanceKcal)) {
+    cutEl.textContent = "--";
+    bulkEl.textContent = "--";
+    if (noteEl) noteEl.style.display = "";
+    return;
+  }
+
+  const cut = Math.round(maintenanceKcal - TARGET_DELTA);
+  const bulk = Math.round(maintenanceKcal + TARGET_DELTA);
+
+  cutEl.textContent = `${cut.toLocaleString()} kcal`;
+  bulkEl.textContent = `${bulk.toLocaleString()} kcal`;
+  if (noteEl) noteEl.style.display = "none";
 }
 
 /**
@@ -250,12 +279,18 @@ function render() {
   });
 
   const m = calcMaintenance(data);
+
+  if (!statsText) return;
+
   if (!m) {
-    stats.textContent = `推定に必要な入力が不足しています。
+    statsText.textContent = `推定に必要な入力が不足しています。
 目安：直近14日で「カロリー7日以上」＋「体重（直近7日で3回以上 & 前7日で3回以上）」`;
+
+    // ✅ メンテが無いので増減量も -- に戻す
+    updateTargetsUI(null);
   } else {
     const sign = m.delta14daysKg >= 0 ? "+" : "";
-    stats.textContent = `推定メンテナンス: ${m.maintenance} kcal
+    statsText.textContent = `推定メンテナンス: ${m.maintenance} kcal
 
 対象期間: ${m.window.start} 〜 ${m.window.end}
 14日平均摂取: ${m.avgCal14} kcal
@@ -265,6 +300,9 @@ function render() {
 推定日次収支: ${m.estDailyBalance} kcal/day
 
 入力状況: カロリー${m.counts.calDays}日 / 体重(直近7日${m.counts.last7WeightDays}回, 前7日${m.counts.prev7WeightDays}回)`;
+
+    // ✅ 追加：増量/減量目安を更新
+    updateTargetsUI(m.maintenance);
   }
 
   renderCharts(data);
