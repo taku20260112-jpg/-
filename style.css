@@ -98,21 +98,25 @@ body{
   margin:14px 0;
 }
 
+/* ✅ ここがスマホ対策の本丸：statsをflexにして崩れを防ぐ */
 .stats{
   margin-top:10px;
   line-height:1.6;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
 }
 
-/* ✅ 追加：statsテキスト表示をpreにしても馴染むように */
+/* ✅ statsテキスト表示（preでも崩れない） */
 .statsText{
-  margin:0;
+  margin:0;                /* ← iOSでの余白暴走を防ぐ */
+  padding:0;
   white-space:pre-line;
   font-family:inherit;
 }
 
-/* ✅ 追加：増量/減量目安ブロック（targets） */
+/* ✅ 増量/減量目安ブロック（targets） */
 .targets{
-  margin-top: 12px;
   padding: 12px;
   border-radius: 10px;
   background: #0f1422;
@@ -224,8 +228,6 @@ body{
   .canvasWrap{
     height:280px;
   }
-
-  /* スマホ時：ラベル列を少し詰める */
   .targetRow{
     grid-template-columns: 76px 1fr auto;
   }
