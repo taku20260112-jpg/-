@@ -48,7 +48,29 @@
       </form>
 
       <div class="divider"></div>
-      <div class="stats" id="stats"></div>
+
+      <!-- ✅ 推定結果 -->
+      <div class="stats" id="stats">
+        <!-- ✅ 追加：テキスト表示専用。JSはここだけ更新する -->
+        <pre class="statsText" id="statsText"></pre>
+
+        <!-- ✅ 追加：増量/減量の目安表示枠（JSで数値更新） -->
+        <div class="targets" id="targets" aria-live="polite">
+          <div class="targetRow">
+            <span class="label">減量目安</span>
+            <span class="value" id="cutKcal">--</span>
+            <span class="delta" id="cutDelta">（-250）</span>
+          </div>
+          <div class="targetRow">
+            <span class="label">増量目安</span>
+            <span class="value" id="bulkKcal">--</span>
+            <span class="delta" id="bulkDelta">（+250）</span>
+          </div>
+          <p class="note" id="targetsNote">
+            ※目安は推定メンテナンスカロリーが算出できた場合に表示されます
+          </p>
+        </div>
+      </div>
     </section>
 
     <section class="card">
