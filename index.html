@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>体重 & 摂取カロリー記録</title>
-  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./style.css?v=20260208-2" />
 </head>
 <body>
   <div class="app">
@@ -25,18 +25,15 @@
 
           <label class="field">
             <span>体重（kg）</span>
-            <!-- ✅ required を外す（体重だけの日でもOKにする） -->
             <input id="weight" type="number" step="0.1" />
           </label>
 
           <label class="field">
             <span>摂取カロリー（kcal）</span>
-            <!-- ✅ required を外す（カロリーだけの日でもOKにする） -->
             <input id="calories" type="number" step="1" />
           </label>
         </div>
 
-        <!-- ✅ 補足文（ユーザーが迷わない） -->
         <p class="hint">
           ※体重・カロリーはどちらか片方だけでも保存できます（同じ日付に後から追加入力すると自動で結合されます）
         </p>
@@ -49,12 +46,11 @@
 
       <div class="divider"></div>
 
-      <!-- ✅ 推定結果 -->
       <div class="stats" id="stats">
-        <!-- ✅ 追加：テキスト表示専用。JSはここだけ更新する -->
+        <!-- ✅ JSはここだけ更新 -->
         <pre class="statsText" id="statsText"></pre>
 
-        <!-- ✅ 追加：増量/減量の目安表示枠（JSで数値更新） -->
+        <!-- ✅ 増量/減量の目安 -->
         <div class="targets" id="targets" aria-live="polite">
           <div class="targetRow">
             <span class="label">減量目安</span>
@@ -110,6 +106,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="./app.js"></script>
+  <script src="./app.js?v=20260208-2"></script>
 </body>
 </html>
