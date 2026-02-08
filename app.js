@@ -6,10 +6,9 @@ const weightEl = document.getElementById("weight");
 const caloriesEl = document.getElementById("calories");
 const tbody = document.getElementById("tbody");
 const stats = document.getElementById("stats");
-const statsText = document.getElementById("statsText"); // ✅ 追加
+const statsText = document.getElementById("statsText");
 const resetTodayBtn = document.getElementById("resetToday");
 
-// ✅ 追加：増量/減量の差分（今は固定で ±250）
 const TARGET_DELTA = 250;
 
 let weightLineChartInstance = null;
@@ -47,12 +46,6 @@ function addDays(isoDate, delta) {
   return d.toISOString().slice(0, 10);
 }
 
-/**
- * 未入力を 0 にしないための数値変換
- * - null/undefined/"" は null
- * - 数値にできるものは number
- * - それ以外は null
- */
 function toNumOrNull(v) {
   if (v === null || v === undefined) return null;
   const s = String(v).trim();
@@ -61,9 +54,7 @@ function toNumOrNull(v) {
   return Number.isFinite(n) ? n : null;
 }
 
-/**
- * ✅ 追加：増量/減量目安の表示更新
- */
+/* ✅ 増量/減量目安の表示更新 */
 function updateTargetsUI(maintenanceKcal) {
   const cutEl = document.getElementById("cutKcal");
   const bulkEl = document.getElementById("bulkKcal");
@@ -86,17 +77,6 @@ function updateTargetsUI(maintenanceKcal) {
   if (noteEl) noteEl.style.display = "none";
 }
 
-/**
- * メンテナンスカロリー推定（欠損対応版）
- * - 直近14日（カレンダー日付）を対象にする
- * - カロリー：入力がある日のみ平均（最低7日分）
- * - 体重：直近7日とその前7日でそれぞれ平均（各最低3回）
- * - 脂肪1kg = 7200kcal
- *
- * 重要:
- * - 未入力（null/undefined/""）を Number() で 0 にしない
- * - 欠損値は計算に使わない
- */
 function calcMaintenance(data) {
   const cleaned = data
     .map((x) => ({
@@ -108,7 +88,6 @@ function calcMaintenance(data) {
 
   if (cleaned.length < 1) return null;
 
-  // date -> record (最新で上書きされる)
   const byDate = new Map();
   for (const r of cleaned) byDate.set(r.date, r);
 
@@ -117,7 +96,6 @@ function calcMaintenance(data) {
   );
   const latestDate = dates[dates.length - 1];
 
-  // latestDate を含む直近14日（カレンダー日付）
   const window14 = [];
   for (let i = 13; i >= 0; i--) {
     window14.push(addDays(latestDate, -i));
@@ -138,7 +116,6 @@ function calcMaintenance(data) {
     .map((d) => byDate.get(d)?.weight)
     .filter((v) => Number.isFinite(v));
 
-  // 条件（好みで調整OK）
   if (calVals.length < 7) return null;
   if (prev7W.length < 3) return null;
   if (last7W.length < 3) return null;
@@ -285,8 +262,6 @@ function render() {
   if (!m) {
     statsText.textContent = `推定に必要な入力が不足しています。
 目安：直近14日で「カロリー7日以上」＋「体重（直近7日で3回以上 & 前7日で3回以上）」`;
-
-    // ✅ メンテが無いので増減量も -- に戻す
     updateTargetsUI(null);
   } else {
     const sign = m.delta14daysKg >= 0 ? "+" : "";
@@ -300,8 +275,6 @@ function render() {
 推定日次収支: ${m.estDailyBalance} kcal/day
 
 入力状況: カロリー${m.counts.calDays}日 / 体重(直近7日${m.counts.last7WeightDays}回, 前7日${m.counts.prev7WeightDays}回)`;
-
-    // ✅ 追加：増量/減量目安を更新
     updateTargetsUI(m.maintenance);
   }
 
@@ -319,12 +292,10 @@ form.addEventListener("submit", (e) => {
   const hasW = Number.isFinite(w);
   const hasC = Number.isFinite(c);
 
-  // 日付必須、どちらか一方が必須
   if (!d || (!hasW && !hasC)) return;
 
   const data = load();
 
-  // 同日があればマージ：入力された方のみ上書き、未入力側は保持
   const idx = data.findIndex((x) => x.date === d);
   if (idx >= 0) {
     const prev = data[idx] ?? { date: d };
@@ -346,7 +317,6 @@ form.addEventListener("submit", (e) => {
 
   save(data);
 
-  // UX改善：保存後に入力欄クリア
   weightEl.value = "";
   caloriesEl.value = "";
 
